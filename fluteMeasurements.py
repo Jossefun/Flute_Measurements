@@ -1,5 +1,11 @@
 import math
 
+# Speed of sound in different materials
+speed_of_sound_materials = {
+    "reed": 330,  # Approximate speed of sound in reed (m/s)
+    "pvc": 343    # Speed of sound in air (PVC pipes resonate with air column)
+}
+
 # Frequency of notes based on key categories
 
 base_frequencies = {
@@ -27,10 +33,10 @@ scales = {
     "2": {"Maqam Rast": [1, 1, 0.5, 1, 1, 1, 0.5], "Maqam Hijaz": [0.5, 1.5, 0.5, 1, 0.5, 1.5, 0.5]},
     "3": {"Blues": [1.5, 1, 0.5, 0.5, 1.5, 1]},
     "4": {
-        "Tizita": [1, 1, 1.5, 1],
-        "Bati": [1.5, 1, 2, 1, 2],
-        "Anchihoye": [1, 1.5, 1, 1.5, 2],
-        "Ambassel": [0.5, 2, 1, 0.5, 2]
+        "Tizita": [1, 1, 1.5, 1],  # Updated interval,
+        "Bati": [2, 0.5 ,1 ,2],  # Updated interval,
+        "Anchihoye": [0.5, 2, 0.5 ,2],  # Updated interval,
+        "Ambassel": [0.5, 2, 1, 0.5]  # Updated interval
     }
 }
 
@@ -52,12 +58,12 @@ def get_scale_notes(scale_intervals, key, note_range):
     
     return scale_notes
 
-def get_flute_details(scale_category, scale_type, key, diameter, note_range):
+def get_flute_details(flute_material, scale_category, scale_type, key, diameter, note_range):
     
     if scale_category not in scales or scale_type not in scales[scale_category] or key not in base_frequencies[note_range]:
         return "Invalid selection. Please choose a valid scale category, scale type, and key."
     
-    speed_of_sound = 343
+    speed_of_sound = speed_of_sound_materials[flute_material]  # Select speed of sound based on material
     key_frequency = base_frequencies[note_range][key]
     intervals = scales[scale_category][scale_type]
     radius = (diameter / 2) / 10
@@ -71,16 +77,17 @@ def get_flute_details(scale_category, scale_type, key, diameter, note_range):
     scale_notes = get_scale_notes(intervals, key, note_range)
     
     hole_positions = []
-    current_position = corrected_length
     total_interval = sum(intervals)
     
-    for idx, step in enumerate(intervals, 1):
+    for idx, step in reversed(list(enumerate(intervals, 1))):
         frequency = key_frequency * (2 ** (sum(intervals[:idx]) / 12))
-        hole_position = corrected_length - ((sum(intervals[:idx]) / total_interval) * corrected_length)
+        hole_position = max(0.1, corrected_length - ((sum(intervals[:idx]) / total_interval) * corrected_length))
         hole_diameter = diameter * 0.5
         note_letter = scale_notes[idx]
-        adjusted_position = max(0.5, round(hole_position * 100, 2))
+        adjusted_position = round(hole_position * 100, 2)
         hole_positions.append((idx, adjusted_position, round(hole_diameter, 2), round(frequency, 2), note_letter))
+    
+    
     
     return {
         "Flute Length (cm, Hz, Note)": (round(corrected_length * 100, 2), round(key_frequency, 2), key),
@@ -94,6 +101,11 @@ def get_flute_details(scale_category, scale_type, key, diameter, note_range):
 def main():
     
     print("Flute Maker Calculator\n")
+    flute_material = input("Select flute material (reed/pvc): ").strip().lower()
+    if flute_material not in speed_of_sound_materials:
+        print("Invalid material selection. Defaulting to pvc.")
+        flute_material = "pvc"
+    
     scale_category = input("Enter scale category (1-Western, 2-Arab, 3-R&B, 4-Ethiopian): \n")
     print("\nAvailable scale types:")
     
@@ -111,8 +123,8 @@ def main():
     diameter = float(input("\nEnter the flute's diameter in mm: \n"))
     
     print("\nCalculating flute details...\n")
-    print(f"Selected Key: {key}, Scale Type: {scale_type}, Diameter: {diameter} mm\n")
-    result = get_flute_details(scale_category, scale_type, key, diameter, note_range)
+    print(f"Selected Material: {flute_material}, Key: {key}, Scale Type: {scale_type}, Diameter: {diameter} mm\n")
+    result = get_flute_details(flute_material, scale_category, scale_type, key, diameter, note_range)
     
     if isinstance(result, str):
         print(result)
